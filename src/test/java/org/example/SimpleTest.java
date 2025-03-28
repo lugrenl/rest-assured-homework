@@ -173,7 +173,7 @@ public class SimpleTest {
         Pet testPet = pets.get(0);
         Vet testVet = vets.get(0);
 
-        //выбор владельца питомца
+        // Выбор владельца питомца
         requestSpecification.given()
                 .when()
                 .get("/petclinic/api/owners/" + testOwner.getId())
@@ -186,7 +186,7 @@ public class SimpleTest {
                 .body("telephone", equalTo(testOwner.getTelephone()))
                 .body("id", equalTo(testOwner.getId()));
 
-        //выбор питомца
+        // Выбор питомца
         requestSpecification.given()
                 .when()
                 .get("/petclinic/api/owners/" + testOwner.getId() + "/pets/" + testPet.getId())
@@ -198,7 +198,7 @@ public class SimpleTest {
                 .body("ownerId", equalTo(testOwner.getId()))
                 .body("id", equalTo(testPet.getId()));
 
-        //выбор ветеринара
+        // Выбор ветеринара
         requestSpecification.given()
                 .when()
                 .get("/petclinic/api/vets/" + testVet.getId())
@@ -209,7 +209,7 @@ public class SimpleTest {
                 .body("specialties[0].name", equalTo(testVet.getSpecialties().get(0).getName()))
                 .body("id", equalTo(testVet.getId()));
 
-        //создание записи на приём
+        // Создание записи на приём
         Visit testVisit = Visit.builder().date("2025-03-28").description("description for " + testPet.getName()).build();
 
         Integer id = requestSpecification.given()
@@ -225,7 +225,7 @@ public class SimpleTest {
 
         testVisit.setId(id);
 
-        //получим созданную запись
+        // Получим созданную запись
         requestSpecification.given()
                 .when()
                 .get("/petclinic/api/visits/" + testVisit.getId())
@@ -235,6 +235,30 @@ public class SimpleTest {
                 .body("date", equalTo(testVisit.getDate()))
                 .body("id", equalTo(testVisit.getId()))
                 .body("petId", equalTo(testPet.getId()));
+    }
+
+    @Test
+    void testNegative() {
+
+        int invalidId = Integer.MAX_VALUE;
+
+        // Создание некорректной записи на приём
+        Visit testVisit = Visit.builder().date("2025-03-28").description("test description").build();
+
+        requestSpecification.given()
+                .with().body(testVisit)
+                .contentType("application/json")
+                .when()
+                .post("/petclinic/api/owners/" + invalidId + "/pets/" + invalidId + "/visits")
+                .then()
+                .statusCode(NOT_FOUND_CODE);
+
+        // Получение записи для несуществующего питомца
+        requestSpecification.given()
+                .when()
+                .get("/petclinic/api/visits/" + invalidId)
+                .then()
+                .statusCode(NOT_FOUND_CODE);
     }
 
     @Test
