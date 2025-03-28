@@ -17,6 +17,12 @@ import static org.hamcrest.Matchers.equalTo;
 public class SimpleTest {
     static RequestSpecification requestSpecification;
 
+    static List<Owner> owners = new ArrayList<>();
+    static List<PetType> petTypes = new ArrayList<>();
+    static List<Pet> pets = new ArrayList<>();
+    static List<Specialty> specialties = new ArrayList<>();
+    static List<Vet> vets = new ArrayList<>();
+
     @BeforeAll
     static void setUp() {
         requestSpecification = RestAssured.given()
@@ -32,13 +38,11 @@ public class SimpleTest {
                 .when()
                 .post("/petclinic/api/users")
                 .then()
-                .statusCode(SUCCESS_API_CODE)
+                .statusCode(SUCCESS_POST_CODE)
                 .body("username", equalTo("admin"))
                 .body("roles[0].name", equalTo("ROLE_admin"));
 
         // Добавить 2 владельцев питомцев
-        List<Owner> owners = new ArrayList<>();
-
         Owner owner1 = Owner.builder().firstName("Mike").lastName("Davis").address("115 W. Liberty St.").city("NewYork").telephone("8294615723").build();
         Owner owner2 = Owner.builder().firstName("Betty").lastName("Sewell").address("231 Oak St").city("NewArk").telephone("8373407451").build();
 
@@ -52,7 +56,7 @@ public class SimpleTest {
                     .when()
                     .post("/petclinic/api/owners")
                     .then()
-                    .statusCode(SUCCESS_API_CODE)
+                    .statusCode(SUCCESS_POST_CODE)
                     .body("firstName", equalTo(currentOwner.getFirstName()))
                     .body("lastName", equalTo(currentOwner.getLastName()))
                     .extract().path("id");
@@ -61,8 +65,6 @@ public class SimpleTest {
         }
 
         // Добавить 3 вида питомцев
-        List<PetType> petTypes = new ArrayList<>();
-
         PetType petType1 = PetType.builder().name("cat").build();
         PetType petType2 = PetType.builder().name("dog").build();
         PetType petType3 = PetType.builder().name("hamster").build();
@@ -78,7 +80,7 @@ public class SimpleTest {
                     .when()
                     .post("/petclinic/api/pettypes")
                     .then()
-                    .statusCode(SUCCESS_API_CODE)
+                    .statusCode(SUCCESS_POST_CODE)
                     .body("name", equalTo(currentPetType.getName()))
                     .extract().path("id");
 
@@ -91,8 +93,6 @@ public class SimpleTest {
         Pet pet3 = Pet.builder().name("Luna").birthDate("2011-07-05").type(petTypes.get(2)).ownerId(owners.get(0).getId()).build();  // hamster, owner1
         Pet pet4 = Pet.builder().name("Toby").birthDate("2010-06-04").type(petTypes.get(0)).ownerId(owners.get(1).getId()).build();  // cat, owner2
         Pet pet5 = Pet.builder().name("Lucy").birthDate("2012-05-03").type(petTypes.get(1)).ownerId(owners.get(0).getId()).build();  // dog, owner1
-
-        List<Pet> pets = new ArrayList<>();
 
         pets.add(pet1);
         pets.add(pet2);
@@ -107,7 +107,7 @@ public class SimpleTest {
                     .when()
                     .post("/petclinic/api/owners/" + currentPet.getOwnerId() + "/pets")
                     .then()
-                    .statusCode(SUCCESS_API_CODE)
+                    .statusCode(SUCCESS_POST_CODE)
                     .body("name", equalTo(currentPet.getName()))
                     .body("birthDate", equalTo(currentPet.getBirthDate()))
                     .extract().path("id");
@@ -116,8 +116,6 @@ public class SimpleTest {
         }
 
         // Создать 2 специализации ветеринаров
-        List<Specialty> specialties = new ArrayList<>();
-
         Specialty specialty1 = Specialty.builder().name("cat-dog-doctor").build();
         Specialty specialty2 = Specialty.builder().name("hamster-doctor").build();
 
@@ -131,7 +129,7 @@ public class SimpleTest {
                     .when()
                     .post("/petclinic/api/specialties")
                     .then()
-                    .statusCode(SUCCESS_API_CODE)
+                    .statusCode(SUCCESS_POST_CODE)
                     .body("name", equalTo(currentSpecialty.getName()))
                     .extract().path("id");
 
@@ -139,8 +137,6 @@ public class SimpleTest {
         }
 
         // Создать 3 ветеринара
-        List<Vet> vets = new ArrayList<>();
-
         Vet vet1 = Vet.builder().firstName("John").lastName("Neal").specialties(List.of(specialty1)).build();  // cat-dog-doctor
         Vet vet2 = Vet.builder().firstName("Jane").lastName("Moore").specialties(List.of(specialty2)).build();  // hamster-doctor
         Vet vet3 = Vet.builder().firstName("Bob").lastName("Edwards").specialties(List.of(specialty1, specialty2)).build();  // cat-dog-doctor, hamster-doctor
@@ -156,7 +152,7 @@ public class SimpleTest {
                     .when()
                     .post("/petclinic/api/vets")
                     .then()
-                    .statusCode(SUCCESS_API_CODE)
+                    .statusCode(SUCCESS_POST_CODE)
                     .body("firstName", equalTo(currentVet.getFirstName()))
                     .body("lastName", equalTo(currentVet.getLastName()))
                     .body("specialties[0].name", equalTo(currentVet.getSpecialties().get(0).getName()))
@@ -169,6 +165,76 @@ public class SimpleTest {
     @Test
     void testStub() {
         Assertions.assertTrue(true);
+    }
+
+    @Test
+    void testPositive() {
+        Owner testOwner = owners.get(0);
+        Pet testPet = pets.get(0);
+        Vet testVet = vets.get(0);
+
+        //выбор владельца питомца
+        requestSpecification.given()
+                .when()
+                .get("/petclinic/api/owners/" + testOwner.getId())
+                .then()
+                .statusCode(SUCCESS_CODE)
+                .body("firstName", equalTo(testOwner.getFirstName()))
+                .body("lastName", equalTo(testOwner.getLastName()))
+                .body("address", equalTo(testOwner.getAddress()))
+                .body("city", equalTo(testOwner.getCity()))
+                .body("telephone", equalTo(testOwner.getTelephone()))
+                .body("id", equalTo(testOwner.getId()));
+
+        //выбор питомца
+        requestSpecification.given()
+                .when()
+                .get("/petclinic/api/owners/" + testOwner.getId() + "/pets/" + testPet.getId())
+                .then()
+                .statusCode(SUCCESS_CODE)
+                .body("name", equalTo(testPet.getName()))
+                .body("birthDate", equalTo(testPet.getBirthDate()))
+                .body("type.name", equalTo(testPet.getType().getName()))
+                .body("ownerId", equalTo(testOwner.getId()))
+                .body("id", equalTo(testPet.getId()));
+
+        //выбор ветеринара
+        requestSpecification.given()
+                .when()
+                .get("/petclinic/api/vets/" + testVet.getId())
+                .then()
+                .statusCode(SUCCESS_CODE)
+                .body("firstName", equalTo(testVet.getFirstName()))
+                .body("lastName", equalTo(testVet.getLastName()))
+                .body("specialties[0].name", equalTo(testVet.getSpecialties().get(0).getName()))
+                .body("id", equalTo(testVet.getId()));
+
+        //создание записи на приём
+        Visit testVisit = Visit.builder().date("2025-03-28").description("description for " + testPet.getName()).build();
+
+        Integer id = requestSpecification.given()
+                .with().body(testVisit)
+                .contentType("application/json")
+                .when()
+                .post("/petclinic/api/owners/" + testOwner.getId() + "/pets/" + testPet.getId() + "/visits")
+                .then()
+                .statusCode(SUCCESS_POST_CODE)
+                .body("description", equalTo(testVisit.getDescription()))
+                .body("date", equalTo(testVisit.getDate()))
+                .extract().path("id");
+
+        testVisit.setId(id);
+
+        //получим созданную запись
+        requestSpecification.given()
+                .when()
+                .get("/petclinic/api/visits/" + testVisit.getId())
+                .then()
+                .statusCode(SUCCESS_CODE)
+                .body("description", equalTo(testVisit.getDescription()))
+                .body("date", equalTo(testVisit.getDate()))
+                .body("id", equalTo(testVisit.getId()))
+                .body("petId", equalTo(testPet.getId()));
     }
 
     @Test
